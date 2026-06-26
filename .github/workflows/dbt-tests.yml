@@ -1,0 +1,48 @@
+name: dbt Tests
+
+on:
+  push:
+    paths:
+      - 'medical_warehouse/**'
+  pull_request:
+    paths:
+      - 'medical_warehouse/**'
+
+jobs:
+  dbt-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dbt
+      run: |
+        pip install dbt-postgres
+
+    - name: Run dbt
+      run: |
+        cd medical_warehouse
+        dbt deps
+        dbt debug
+        dbt run
+        dbt test
