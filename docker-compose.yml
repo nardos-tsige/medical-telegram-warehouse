@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${DB_USER:-medical_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-medical_pass}
+      POSTGRES_DB: ${DB_NAME:-medical_warehouse}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-medical_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      DB_HOST: postgres
+      DB_USER: ${DB_USER:-medical_user}
+      DB_PASSWORD: ${DB_PASSWORD:-medical_pass}
+      DB_NAME: ${DB_NAME:-medical_warehouse}
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+    ports:
+      - "8000:8000"
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: tail -f /dev/null
+
+volumes:
+  postgres_data:
