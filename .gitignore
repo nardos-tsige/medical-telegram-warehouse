@@ -74,4 +74,10 @@ coverage.xml
 *.pth
 
 # PostgreSQL
-*.pid
+*.pid*.session 
+telegram_session.session 
+test_session.session 
+list_session.session 
+search_session.session 
+test_download.session 
+image_downloader.session 
