@@ -10,3 +10,12 @@ medical_warehouse:
       dbname: medical_warehouse
       schema: staging
       threads: 1
+    ci:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: test_user
+      password: test_pass
+      dbname: test_db
+      schema: staging
+      threads: 4
