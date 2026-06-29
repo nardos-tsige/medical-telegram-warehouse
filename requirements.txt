@@ -21,13 +21,13 @@ numpy==1.24.3
 ultralytics==8.0.200
 
 # API - Compatible with dagster
-fastapi==0.95.0
-uvicorn[standard]==0.23.2
+fastapi==0.85.0
+uvicorn[standard]==0.20.0
 pydantic==1.10.7
 
-# Orchestration
-dagster==1.3.10
-dagster-webserver==1.3.10
+# Orchestration - Use versions that exist
+dagster==1.3.14
+dagster-webserver==1.3.14
 
 # Testing
 pytest==7.4.0
