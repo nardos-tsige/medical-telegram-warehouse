@@ -77,6 +77,15 @@ jobs:
         medical_warehouse:
           target: ci
           outputs:
+            dev:
+              type: postgres
+              host: localhost
+              port: 5432
+              user: medical_user
+              password: medical_pass
+              dbname: medical_warehouse
+              schema: staging
+              threads: 1
             ci:
               type: postgres
               host: localhost
@@ -91,18 +100,18 @@ jobs:
     - name: Test dbt connection
       run: |
         cd medical_warehouse
-        dbt debug
+        dbt debug --target ci
 
     - name: Run dbt models
       run: |
         cd medical_warehouse
-        dbt run
+        dbt run --target ci
 
     - name: Run dbt tests
       run: |
         cd medical_warehouse
-        dbt test
+        dbt test --target ci
 
     - name: Run Python tests
       run: |
-        pytest tests/ -v || true
+        pytest tests/ -v --ignore=medical_warehouse || true
