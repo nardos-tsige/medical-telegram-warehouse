@@ -120,10 +120,9 @@ def medical_warehouse_pipeline():
     yolo = run_yolo_enrichment(dbt)
     load_yolo_results(yolo)
 
-# Create a schedule that runs daily at 9 AM
 daily_schedule = ScheduleDefinition(
     job=medical_warehouse_pipeline,
-    cron_schedule="0 9 * * *",  # Runs at 9:00 AM every day
+    cron_schedule="0 9 * * *",
 )
 
 defs = Definitions(
