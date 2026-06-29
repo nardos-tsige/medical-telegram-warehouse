@@ -23,3 +23,7 @@ models:
     marts:
       +materialized: table
       +schema: marts
+      fct_image_detections:
+        +materialized: table
+        +schema: marts
+        +tags: ['yolo', 'fact']

@@ -29,11 +29,19 @@ def create_yolo_table(db):
         num_objects INTEGER,
         detection_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    
+    -- Create indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_image_detections_message_id 
+        ON raw.image_detections(message_id);
+    CREATE INDEX IF NOT EXISTS idx_image_detections_channel 
+        ON raw.image_detections(channel_name);
+    CREATE INDEX IF NOT EXISTS idx_image_detections_category 
+        ON raw.image_detections(category);
     """
     with db.get_connection() as conn:
         conn.execute(text(create_sql))
         conn.commit()
-    logger.info("Image detections table created")
+    logger.info("Image detections table created with indexes")
 
 def load_yolo_results(db):
     """Load YOLO results from CSV"""
@@ -71,13 +79,13 @@ def load_yolo_results(db):
         :category,
         :num_objects
     )
+    ON CONFLICT (id) DO NOTHING;
     """
     
     with db.get_connection() as conn:
         count = 0
         for row in rows:
             try:
-                # Parse detections from CSV
                 message_id = int(row['message_id'])
                 channel_name = row['channel_name']
                 image_path = row['image_path']
@@ -85,7 +93,6 @@ def load_yolo_results(db):
                 num_objects = int(row['num_objects'])
                 detected_classes = row['detected_classes'].split(', ')
                 
-                # Insert each detection
                 for cls in detected_classes:
                     conn.execute(text(insert_sql), {
                         'message_id': message_id,
@@ -112,7 +119,6 @@ def create_sample_data():
     output_dir = Path('data/processed')
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Get some message IDs from the database
     db = DatabaseManager()
     db.connect()
     
@@ -124,7 +130,6 @@ def create_sample_data():
         logger.warning("No messages with media found")
         return
     
-    # Sample categories and classes
     categories = ['promotional', 'product_display', 'lifestyle', 'other']
     class_sets = [
         ['person', 'bottle'],
@@ -152,7 +157,6 @@ def create_sample_data():
             'detected_classes': ', '.join(detected_classes)
         })
     
-    # Save to CSV
     csv_path = output_dir / 'yolo_detections.csv'
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -168,8 +172,6 @@ def create_sample_data():
             ])
     
     logger.info(f"Created {len(results)} sample YOLO results at {csv_path}")
-    
-    # Load the sample data
     load_yolo_results(db)
 
 def main():

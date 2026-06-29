@@ -1,0 +1,158 @@
+name: Unit Tests & CI/CD
+
+on:
+  push:
+    branches: [ main, develop, task-* ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 9 * * *'  # Daily run at 9 AM
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-xdist
+
+    - name: Create .env file for testing
+      run: |
+        echo "DB_HOST=localhost" > .env
+        echo "DB_PORT=5432" >> .env
+        echo "DB_USER=test_user" >> .env
+        echo "DB_PASSWORD=test_pass" >> .env
+        echo "DB_NAME=test_db" >> .env
+        echo "TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}" >> .env
+        echo "TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}" >> .env
+
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -U test_user; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
+    - name: Initialize database
+      run: |
+        psql -h localhost -U test_user -d test_db -c "CREATE SCHEMA IF NOT EXISTS raw;"
+        psql -h localhost -U test_user -d test_db -c "CREATE SCHEMA IF NOT EXISTS staging;"
+        psql -h localhost -U test_user -d test_db -c "CREATE SCHEMA IF NOT EXISTS marts;"
+
+    - name: Run Python tests
+      run: |
+        pytest tests/ -v --cov=src --cov=api --cov-report=xml --cov-report=html
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+    - name: Run dbt tests
+      run: |
+        cd medical_warehouse
+        dbt deps --profiles-dir ./
+        dbt debug --profiles-dir ./
+        dbt run --profiles-dir ./
+        dbt test --profiles-dir ./
+
+    - name: Run linter
+      run: |
+        pip install flake8 black
+        flake8 src/ api/ scripts/ --count --max-complexity=10 --statistics
+        black --check src/ api/ scripts/
+
+    - name: Run security checks
+      run: |
+        pip install bandit safety
+        bandit -r src/ api/ -f json -o bandit-report.json || true
+        safety check
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          htmlcov/
+          coverage.xml
+          bandit-report.json
+          pytest_report.html
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -t medical-telegram-warehouse:latest .
+        docker images
+
+    - name: Test Docker container
+      run: |
+        docker run --rm medical-telegram-warehouse:latest python -c "print('Container works!')"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production..."
+        # Add your deployment commands here
+        # Example: SSH to server, run docker-compose up -d
+
+    - name: Notify on success
+      if: success()
+      run: |
+        echo " Deployment successful!"
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo " Deployment failed!"
