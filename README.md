@@ -2,27 +2,39 @@
 
 An end-to-end data pipeline for analyzing Ethiopian medical businesses from public Telegram channels.
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
-[![dbt](https://img.shields.io/badge/dbt-1.5.0-orange.svg)](https://www.getdbt.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100.0-green.svg)](https://fastapi.tiangolo.com/)
-[![Dagster](https://img.shields.io/badge/Dagster-1.4.0-purple.svg)](https://dagster.io/)
+![Unit Tests](https://github.com/nardos-tsige/medical-telegram-warehouse/actions/workflows/unittests.yml/badge.svg)
+![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)
+![dbt](https://img.shields.io/badge/dbt-1.5.0-orange.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100.0-green.svg)
+![Dagster](https://img.shields.io/badge/Dagster-1.4.0-purple.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Business Questions](#business-questions)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Tasks](#tasks)
-- [API Endpoints](#api-endpoints)
-- [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
+- [Overview](#-overview)
+- [Business Questions](#-business-questions)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Quick Start](#-quick-start)
+- [Environment Variables](#-environment-variables)
+- [Tasks](#-tasks)
+- [API Endpoints](#-api-endpoints)
+- [Results](#-results)
+- [Testing](#-testing)
+- [CI/CD Pipeline](#-cicd-pipeline)
+- [Docker Support](#-docker-support)
+- [Monitoring](#-monitoring)
+- [Deployment](#-deployment)
+- [Branch Strategy](#-branch-strategy)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
+- [Contact](#-contact)
 
 ---
 
@@ -44,7 +56,7 @@ A well-designed data platform significantly enhances data analysis. This platfor
 ## 🎯 Business Questions
 
 | Question | How It's Answered |
-|----------|-------------------|
+|---|---|
 | Top 10 mentioned products | API: `/api/reports/top-products` |
 | Product price/availability across channels | API: `/api/channels/{channel_name}/activity` |
 | Channels with most visual content | API: `/api/reports/visual-content` |
@@ -54,159 +66,92 @@ A well-designed data platform significantly enhances data analysis. This platfor
 
 ## 🏗️ Architecture
 ┌─────────────────────────────────────────────────────────────────────────────┐
-
-│                        MEDICAL TELEGRAM WAREHOUSE                           │
-
+│                         MEDICAL TELEGRAM WAREHOUSE                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
-
 │                                                                             │
-
 │  📡 Telegram Channels (14)                                                  │
-
-│          ↓                                                                  │
-
+│       ↓                                                                     │
 │  🕷️ Scraper (Telethon)                                                      │
-
-│          ↓                                                                  │
-
+│       ↓                                                                     │
 │  📂 Data Lake (JSON Files)                                                  │
-
-│          ↓                                                                  │
-
+│       ↓                                                                     │
 │  💾 PostgreSQL (raw.telegram_messages)                                      │
-
-│          ↓                                                                  │
-
+│       ↓                                                                     │
 │  🔄 dbt Transformations                                                     │
-
-│     ├── staging.stg_telegram_messages (View)                                │
-
-│     ├── marts.dim_channels (8 channels)                                     │
-
-│     ├── marts.dim_dates (31 days)                                           │
-
-│     └── marts.fct_messages (4,849 messages)                                 │
-
-│          ↓                                                                  │
-
+│       ├── staging.stg_telegram_messages (View)                              │
+│       ├── marts.dim_channels (8 channels)                                   │
+│       ├── marts.dim_dates (31 days)                                         │
+│       └── marts.fct_messages (4,849 messages)                               │
+│       ↓                                                                     │
 │  🤖 YOLOv8 Enrichment (93 detections)                                       │
-
-│          ↓                                                                  │
-
+│       ↓                                                                     │
 │  🚀 FastAPI (5 Endpoints)                                                   │
-
-│          ↓                                                                  │
-
-│  ⏰ Dagster (Daily Orchestration)                                            │
-
+│       ↓                                                                     │
+│  ⏰ Dagster (Daily Orchestration)                                           │
 │                                                                             │
-
 └─────────────────────────────────────────────────────────────────────────────┘
-
 ---
 
 ## 🛠️ Tech Stack
 
 | Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Scraping** | Telethon | Extract data from Telegram channels |
-| **Data Lake** | JSON Files | Store raw scraped data |
-| **Database** | PostgreSQL 15 | Data warehouse |
-| **Transformation** | dbt 1.5.0 | Data modeling and transformation |
-| **Object Detection** | YOLOv8 | Image analysis and classification |
-| **API** | FastAPI 0.100.0 | REST API for analytics |
-| **Orchestration** | Dagster 1.4.0 | Pipeline automation |
-| **Containerization** | Docker | Environment consistency |
+|---|---|---|
+| Scraping | Telethon | Extract data from Telegram channels |
+| Data Lake | JSON Files | Store raw scraped data |
+| Database | PostgreSQL 15 | Data warehouse |
+| Transformation | dbt 1.5.0 | Data modeling and transformation |
+| Object Detection | YOLOv8 | Image analysis and classification |
+| API | FastAPI 0.100.0 | REST API for analytics |
+| Orchestration | Dagster 1.4.0 | Pipeline automation |
+| Containerization | Docker | Environment consistency |
 
 ---
 
 ## 📁 Project Structure
 medical-telegram-warehouse/
-
 ├── .github/
-
 │   └── workflows/
-
-│       └── unittests.yml          # GitHub Actions CI/CD
-
+│       └── unittests.yml        # GitHub Actions CI/CD
 ├── api/
-
 │   ├── init.py
-
-│   ├── main.py                    # FastAPI application
-
-│   ├── database.py                # Database connection
-
-│   └── schemas.py                 # Pydantic models
-
+│   ├── main.py                  # FastAPI application
+│   ├── database.py              # Database connection
+│   └── schemas.py               # Pydantic models
 ├── data/
-
 │   ├── raw/
-
-│   │   ├── telegram_messages/     # JSON data lake
-
-│   │   └── images/                # Downloaded images
-
-│   └── processed/                 # YOLO detection results
-
-├── logs/                          # Application logs
-
-├── medical_warehouse/             # dbt project
-
+│   │   ├── telegram_messages/   # JSON data lake
+│   │   └── images/              # Downloaded images
+│   └── processed/               # YOLO detection results
+├── logs/                        # Application logs
+├── medical_warehouse/           # dbt project
 │   ├── dbt_project.yml
-
 │   ├── profiles.yml
-
 │   ├── models/
-
 │   │   ├── staging/
-
 │   │   │   └── stg_telegram_messages.sql
-
 │   │   └── marts/
-
 │   │       ├── dim_channels.sql
-
 │   │       ├── dim_dates.sql
-
 │   │       ├── fct_messages.sql
-
 │   │       └── schema.yml
-
 │   └── tests/
-
-├── notebooks/                     # Jupyter notebooks
-
+├── notebooks/                   # Jupyter notebooks
 ├── scripts/
-
-│   ├── load_raw_data.py           # Load JSON to PostgreSQL
-
-│   └── load_yolo_results.py       # Load YOLO results
-
+│   ├── load_raw_data.py         # Load JSON to PostgreSQL
+│   └── load_yolo_results.py     # Load YOLO results
 ├── src/
-
-│   ├── scraper.py                 # Telegram scraper
-
-│   ├── yolo_detect.py             # YOLO object detection
-
-│   └── database.py                # Database utilities
-
-├── tests/                         # Unit tests
-
-├── .env                           # Environment variables (DO NOT COMMIT)
-
+│   ├── scraper.py               # Telegram scraper
+│   ├── yolo_detect.py           # YOLO object detection
+│   └── database.py              # Database utilities
+├── tests/                       # Unit tests
+├── .env                         # Environment variables (DO NOT COMMIT)
+├── .env.example                 # Environment variables template
 ├── .gitignore
-
 ├── Dockerfile
-
 ├── docker-compose.yml
-
 ├── requirements.txt
-
 ├── README.md
-
-└── pipeline.py                    # Dagster pipeline
-
+└── pipeline.py                  # Dagster pipeline
 ---
 
 ## 🚀 Quick Start
@@ -252,6 +197,37 @@ python scripts/load_yolo_results.py
 
 ---
 
+## 🔐 Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=medical_user
+DB_PASSWORD=medical_pass
+DB_NAME=medical_warehouse
+
+# Telegram API (Get from my.telegram.org)
+TELEGRAM_API_ID=your_api_id
+TELEGRAM_API_HASH=your_api_hash
+
+# FastAPI Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Dagster Configuration
+DAGSTER_HOME=~/.dagster
+
+# Logging
+LOG_LEVEL=INFO
+```
+
+> ⚠️ **Never commit the `.env` file to version control!**
+
+---
+
 ## 📝 Tasks
 
 ### Task 1: Data Scraping and Collection
@@ -293,7 +269,7 @@ python scripts/load_yolo_results.py
 ## 🔗 API Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|---|---|---|
 | GET | `/` | API root |
 | GET | `/api/health` | Health check |
 | GET | `/api/reports/top-products?limit=10` | Top mentioned products |
@@ -307,10 +283,10 @@ python scripts/load_yolo_results.py
 # Start the API
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
-# Access Swagger UI
+# Swagger UI
 http://localhost:8000/docs
 
-# Access ReDoc
+# ReDoc
 http://localhost:8000/redoc
 ```
 
@@ -319,7 +295,7 @@ http://localhost:8000/redoc
 ## 📊 Results
 
 | Metric | Value |
-|--------|-------|
+|---|---|
 | Total Messages | 5,009 |
 | Channels | 14 |
 | Images Downloaded | 935 |
@@ -331,8 +307,8 @@ http://localhost:8000/redoc
 
 ### Channel Distribution
 
-| Channel | Messages | Channel Type |
-|---------|----------|--------------|
+| Channel | Messages | Type |
+|---|---|---|
 | ethio_vital_health | 2,691 | Medical |
 | PharmacyHubEthiopia | 711 | Pharmaceutical |
 | lobelia4cosmetics | 658 | Cosmetics |
@@ -360,6 +336,27 @@ pytest tests/ --cov=src --cov=api
 
 ---
 
+## ⚙️ CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration.
+
+| Step | Description |
+|---|---|
+| Lint | Checks code style with flake8 |
+| Test | Runs Python unit tests |
+| Build | Builds Docker image |
+| Security | Scans for vulnerabilities |
+
+```bash
+# Run all tests locally
+pytest tests/ -v --cov=src --cov=api
+
+# Run linting
+flake8 src/ api/ scripts/
+```
+
+---
+
 ## 🐳 Docker Support
 
 ```bash
@@ -376,21 +373,81 @@ docker-compose up -d
 
 ## 📈 Monitoring
 
-### Dagster UI
-
 ```bash
+# Dagster UI
 dagster dev -f pipeline.py
 # Access: http://localhost:3000
-```
 
-### Service Status
-
-```bash
 # Check API health
 curl http://localhost:8000/api/health
 
 # Check PostgreSQL
 psql -U medical_user -d medical_warehouse -c "SELECT COUNT(*) FROM marts.fct_messages;"
+```
+
+---
+
+## 🚀 Deployment
+
+### Docker
+
+```bash
+docker-compose up -d --build
+docker-compose ps
+docker-compose logs -f
+```
+
+### Manual
+
+```bash
+python src/scraper.py
+python scripts/load_raw_data.py
+cd medical_warehouse && dbt run
+cd ..
+python src/yolo_detect.py
+python scripts/load_yolo_results.py
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+dagster dev -f pipeline.py
+```
+
+---
+
+## 🌿 Branch Strategy
+
+| Branch | Purpose | Status |
+|---|---|---|
+| `main` | Production-ready code | ✅ |
+| `task-1-data-scraping` | Data scraping implementation | ✅ Merged |
+| `task-2-data-modeling` | dbt modeling | ✅ Merged |
+| `task-3-yolo-enrichment` | YOLO implementation | ✅ Merged |
+| `task-4-api-development` | FastAPI | ✅ Merged |
+| `task-5-pipeline-orchestration` | Dagster | ✅ Merged |
+
+```bash
+git checkout -b task-N-feature-name
+git add . && git commit -m "feat: add feature"
+git push origin task-N-feature-name
+# Then open a Pull Request on GitHub
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Issue | Solution |
+|---|---|
+| PostgreSQL connection failed | `docker-compose up -d` |
+| Telegram API rate limited | Add delays or reduce `days_back` |
+| dbt models fail | `SELECT COUNT(*) FROM raw.telegram_messages;` |
+| FastAPI not starting | `netstat -ano \| findstr 8000` |
+| Dagster port in use | `dagster dev -f pipeline.py --port 3001` |
+| YOLO no images found | `ls data/raw/images/` |
+
+```bash
+# Debug helpers
+logs/scraper.log
+cd medical_warehouse && dbt debug
+psql -U medical_user -d medical_warehouse -c "SELECT 1;"
 ```
 
 ---
@@ -402,17 +459,6 @@ psql -U medical_user -d medical_warehouse -c "SELECT COUNT(*) FROM marts.fct_mes
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-### Branching Strategy
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Production-ready code |
-| `task-1-data-scraping` | Data scraping implementation |
-| `task-2-data-modeling` | dbt modeling |
-| `task-3-yolo-enrichment` | YOLO implementation |
-| `task-4-api-development` | FastAPI |
-| `task-5-pipeline-orchestration` | Dagster |
 
 ---
 
@@ -436,12 +482,8 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 **Author:** Nardos Tsige  
 **GitHub:** [@nardos-tsige](https://github.com/nardos-tsige)  
-**Project Link:** [https://github.com/nardos-tsige/medical-telegram-warehouse](https://github.com/nardos-tsige/medical-telegram-warehouse)
+**Project:** [medical-telegram-warehouse](https://github.com/nardos-tsige/medical-telegram-warehouse)
 
 ---
 
-⭐ **Show Your Support** — If you found this project helpful, please give it a star on GitHub!
-
----
-
-*Built with ❤️ for Ethiopian medical data analytics*
+⭐ **If you found this project helpful, please give it a star on GitHub!**
