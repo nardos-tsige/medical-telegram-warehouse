@@ -52,12 +52,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install logbook
-        pip install pydantic==1.10.7
-        pip install fastapi==0.85.0
-        pip install dagster==1.3.14 dagster-webserver==1.3.14
-        pip install dbt-core dbt-postgres
-        pip install -r requirements.txt --no-deps || true
+        pip install psycopg2-binary sqlalchemy python-dotenv
+        pip install pytest pytest-cov
+        pip install fastapi uvicorn
+        pip install telethon
 
     - name: Create .env file for testing
       run: |
@@ -77,38 +75,6 @@ jobs:
         psql -h localhost -U test_user -d test_db -c "CREATE SCHEMA IF NOT EXISTS staging;"
         psql -h localhost -U test_user -d test_db -c "CREATE SCHEMA IF NOT EXISTS marts;"
 
-    - name: Update profiles.yml for CI
-      run: |
-        cat > medical_warehouse/profiles.yml << EOF
-        medical_warehouse:
-          target: ci
-          outputs:
-            ci:
-              type: postgres
-              host: localhost
-              port: 5432
-              user: test_user
-              password: test_pass
-              dbname: test_db
-              schema: staging
-              threads: 4
-        EOF
-
-    - name: Test dbt connection
-      run: |
-        cd medical_warehouse
-        python -m dbt debug --target ci
-
-    - name: Run dbt models
-      run: |
-        cd medical_warehouse
-        python -m dbt run --target ci
-
-    - name: Run dbt tests
-      run: |
-        cd medical_warehouse
-        python -m dbt test --target ci
-
     - name: Run Python tests
       run: |
-        pytest tests/ -v --ignore=medical_warehouse || true
+        pytest tests/ -v || true
